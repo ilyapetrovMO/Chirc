@@ -47,7 +47,7 @@ func (a *application) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	state := &users.UserState{
-		User: users.User{},
+		User: &users.User{},
 		Conn: conn,
 	}
 
@@ -60,14 +60,13 @@ func (a *application) handleConnection(conn net.Conn) {
 		if err != nil {
 			a.Logger.Printf("encountered error while handling connection: %s", err)
 		}
-
 	}
 }
 
 func (a *application) handleCmd(state *users.UserState, str string) error {
 	cmd, err := commands.NewCommand(str)
-	if e, ok := err.(*commands.ErrUnknownCommand); ok {
-		err := a.ReplyWithError(state, e.Command)
+	if err != nil {
+		err := a.ReplyWithError(state, err.Error())
 		return err
 	}
 

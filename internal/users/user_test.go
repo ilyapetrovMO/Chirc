@@ -7,7 +7,7 @@ import (
 func TestUserMap(t *testing.T) {
 	t.Run("insert new user", func(t *testing.T) {
 		m := NewMap()
-		usr := User{
+		usr := &User{
 			Nickname: "Nick",
 			Username: "User",
 		}
@@ -20,7 +20,7 @@ func TestUserMap(t *testing.T) {
 
 	t.Run("try to insert invalid user", func(t *testing.T) {
 		m := NewMap()
-		usr := User{}
+		usr := &User{}
 		err := m.InsertNew(usr)
 		want := ErrUserInvalid
 

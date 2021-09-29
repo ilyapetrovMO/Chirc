@@ -23,25 +23,25 @@ type User struct {
 
 type UserState struct {
 	Pass     string
-	User     User
+	User     *User
 	LoggedIn bool
 	Conn     net.Conn
 }
 
 type Map struct {
 	sync.RWMutex
-	m map[string]User
+	m map[string]*User
 }
 
 func NewMap() *Map {
 	m := &Map{
-		m: make(map[string]User),
+		m: make(map[string]*User),
 	}
 	return m
 }
 
-func (m *Map) InsertNew(user User) error {
-	if m.UsernameExists(user.Username) {
+func (m *Map) InsertNew(user *User) error {
+	if m.NickExists(user.Nickname) {
 		return ErrUserExists
 	}
 
@@ -52,13 +52,13 @@ func (m *Map) InsertNew(user User) error {
 	m.Lock()
 	defer m.Unlock()
 
-	m.m[user.Username] = user
+	m.m[user.Nickname] = user
 
 	return nil
 }
 
-func (m *Map) Update(user User) error {
-	if !m.UsernameExists(user.Username) {
+func (m *Map) Update(user *User) error {
+	if !m.NickExists(user.Nickname) {
 		return ErrUserNotFound
 	}
 
@@ -69,7 +69,7 @@ func (m *Map) Update(user User) error {
 	m.Lock()
 	defer m.Unlock()
 
-	m.m[user.Username] = user
+	m.m[user.Nickname] = user
 	return nil
 }
 
@@ -77,31 +77,31 @@ func (m *Map) UsernameExists(username string) bool {
 	m.RLock()
 	defer m.RUnlock()
 
-	if _, ok := m.m[username]; ok {
-		return true
+	for _, user := range m.m {
+		if user.Username == username {
+			return true
+		}
 	}
 	return false
 }
 
 // CAUTION: Change nick does not check if chosen nick is already in use
-func (m *Map) ChangeNick(username, nickname string) error {
+func (m *Map) ChangeNick(nickname string) error {
 	m.Lock()
 	defer m.Unlock()
 
-	usr := m.m[username]
+	usr := m.m[nickname]
 	usr.Nickname = nickname
-	m.m[username] = usr
+	m.m[nickname] = usr
 	return nil
 }
 
-func (m *Map) NickExists(nick string) bool {
+func (m *Map) NickExists(nickname string) bool {
 	m.RLock()
 	defer m.RUnlock()
 
-	for _, u := range m.m {
-		if u.Nickname == nick {
-			return true
-		}
+	if _, ok := m.m[nickname]; ok {
+		return true
 	}
 	return false
 }

@@ -4,8 +4,22 @@ import (
 	"github.com/ilyapetrovMO/Chirc/internal/users"
 )
 
+// TODO: reusable Command validation logic
+func (c *Command) handlePASS(state *users.UserState, m *users.Map) error {
+	if len(c.Parameters) < 1 {
+		return &ErrNeedMoreParams{c.Command}
+	}
+
+	if state.LoggedIn {
+		return ErrAlreadyRegistered
+	}
+
+	state.User.Pass = c.Parameters[0]
+	return nil
+}
+
 func (c *Command) handleNICK(state *users.UserState, m *users.Map) error {
-	if len(c.Parameters) != 1 {
+	if len(c.Parameters) < 1 {
 		return ErrNoNicknameGiven
 	}
 
@@ -20,7 +34,20 @@ func (c *Command) handleNICK(state *users.UserState, m *users.Map) error {
 		return nil
 	}
 
-	m.ChangeNick(state.User.Username, nick)
+	err := m.ChangeNick(nick)
+
+	return err
+}
+
+// TODO: in progress
+func (c *Command) handleUSER(state *users.UserState, m *users.Map) error {
+	if len(c.Parameters) < 3 {
+		return &ErrNeedMoreParams{c.Command}
+	}
+
+	if c.Trailing == "" {
+		return &ErrNeedMoreParams{c.Command}
+	}
 
 	return nil
 }

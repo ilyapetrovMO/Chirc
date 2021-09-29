@@ -57,13 +57,18 @@ func NewCommand(cmd string) (*Command, error) {
 func (c *Command) Handle(state *users.UserState, users *users.Map) error {
 	var err error
 	switch c.Command {
+	// PASS is non-functional
+	case "PASS":
+		err = c.handlePASS(state, users)
 	case "NICK":
 		err = c.handleNICK(state, users)
+	case "USER":
+		err = c.handleUSER(state, users)
 	}
 	return err
 }
 
-// works like strings.Fields, except if it finds a ':' rune,
+// Works like strings.Fields, except if it finds a ':' rune,
 // everything after it will be returned as a single string
 func fields(cmd string) ([]string, error) {
 	res := []string{""}
@@ -79,11 +84,11 @@ func fields(cmd string) ([]string, error) {
 			continue
 		}
 		if r == ':' && midWord {
-			return nil, ErrInParams
+			return nil, ErrUnexpectedError
 		}
 		if r == ':' && idx != 0 {
 			if i+1 >= len(cmd) {
-				return nil, ErrInParams
+				return nil, ErrUnexpectedError
 			}
 			res[idx] = cmd[i:]
 			break
@@ -98,13 +103,13 @@ func fields(cmd string) ([]string, error) {
 
 func isValidCommand(cmd string) bool {
 	switch cmd {
+	case "PASS":
 	case "NICK":
-		fallthrough
+	case "USER":
 	case "PING":
-		fallthrough
 	case "PONG":
-		return true
 	default:
 		return false
 	}
+	return true
 }

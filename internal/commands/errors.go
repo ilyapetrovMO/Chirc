@@ -6,9 +6,19 @@ import (
 )
 
 var (
-	ErrInParams        = errors.New("error in parameter list")
-	ErrNoNicknameGiven = errors.New("431 :No nickname given")
+	ErrInParams          = errors.New("error in parameter list")
+	ErrNoNicknameGiven   = errors.New("431 :No nickname given")
+	ErrUnexpectedError   = errors.New("ERROR")
+	ErrAlreadyRegistered = errors.New("462 :Unauthorized command (already registered)")
 )
+
+type ErrNeedMoreParams struct {
+	Command string
+}
+
+func (e *ErrNeedMoreParams) Error() string {
+	return fmt.Sprintf("461 %s :Not enough parameters", e.Command)
+}
 
 type ErrUnknownCommand struct {
 	Command string

@@ -31,6 +31,7 @@ func (c *Command) handleNICK(state *users.UserState, m *users.Map) error {
 		}
 
 		state.User.Nickname = nick
+		m.InsertNew(state.User)
 		return nil
 	}
 

@@ -73,6 +73,12 @@ func (m *Map) Update(user *User) error {
 	return nil
 }
 
+func (m *Map) Delete(nickname string) {
+	m.Lock()
+	defer m.Unlock()
+	delete(m.m, nickname)
+}
+
 func (m *Map) UsernameExists(username string) bool {
 	m.RLock()
 	defer m.RUnlock()
@@ -91,6 +97,8 @@ func (m *Map) ChangeNick(nickname string) error {
 	defer m.Unlock()
 
 	usr := m.m[nickname]
+	m.Delete(nickname)
+
 	usr.Nickname = nickname
 	m.m[nickname] = usr
 	return nil

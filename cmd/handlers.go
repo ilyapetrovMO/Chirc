@@ -59,7 +59,12 @@ func (a *application) handleConnection(conn net.Conn) {
 		err := a.handleCmd(state, str)
 		if err != nil {
 			a.Logger.Printf("encountered error while handling connection: %s", err)
+			break
 		}
+	}
+
+	if state.User.Nickname != "" {
+		a.Users.Delete(state.User.Nickname)
 	}
 }
 

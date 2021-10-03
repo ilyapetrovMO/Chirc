@@ -71,7 +71,6 @@ func (a *application) handleConnection(conn net.Conn) {
 func (a *application) handleCmd(state *users.UserState, str string) error {
 	cmd, err := commands.NewCommand(str)
 	if err != nil {
-		err := a.ReplyWithError(state, err.Error())
 		return err
 	}
 

@@ -1,17 +1,23 @@
 package commands
 
 import (
+	"bufio"
+	"errors"
+	"fmt"
+
 	"github.com/ilyapetrovMO/Chirc/internal/users"
 )
 
 // TODO: reusable Command validation logic
 func (c *Command) handlePASS(state *users.UserState, m *users.Map) error {
 	if len(c.Parameters) < 1 {
-		return &ErrNeedMoreParams{c.Command}
+		c.replyErrNeedMoreParams(state)
+		return nil
 	}
 
-	if state.LoggedIn {
-		return ErrAlreadyRegistered
+	if state.IsRegistered {
+		replyErrAlreadyRegistered(state)
+		return nil
 	}
 
 	state.User.Pass = c.Parameters[0]
@@ -20,35 +26,63 @@ func (c *Command) handlePASS(state *users.UserState, m *users.Map) error {
 
 func (c *Command) handleNICK(state *users.UserState, m *users.Map) error {
 	if len(c.Parameters) < 1 {
-		return ErrNoNicknameGiven
+		replyErrNoNicknameGiven(state)
+		return nil
 	}
 
 	nick := c.Parameters[0]
 
-	if !state.LoggedIn {
-		if m.NickExists(nick) {
-			return &ErrNicknameInUse{nick}
+	if !state.IsRegistered {
+		err := m.ReserveNick(nick)
+		if err == users.ErrNickExists {
+			replyErrNicknameInUse(nick, state.Conn)
+			return nil
+		} else if err != nil {
+			return err
 		}
 
 		state.User.Nickname = nick
-		m.InsertNew(state.User)
 		return nil
 	}
 
 	err := m.ChangeNick(nick)
+	return err
+}
+
+func (c *Command) handleUSER(state *users.UserState, m *users.Map) error {
+	if state.IsRegistered {
+		replyErrAlreadyRegistered(state)
+		return nil
+	}
+
+	if state.User.Nickname == "" {
+		return errors.New("USER command used before NICK")
+	}
+
+	if len(c.Parameters) < 3 || c.Trailing == "" {
+		c.replyErrNeedMoreParams(state)
+		return nil
+	}
+
+	state.User.Username = c.Parameters[0]
+	state.User.FullName = c.Trailing
+	err := m.RegisterUser(state.User)
+	if err != nil {
+		return err
+	}
+
+	state.IsRegistered = true
+	err = sendRplWelcome(state)
 
 	return err
 }
 
-// TODO: in progress
-func (c *Command) handleUSER(state *users.UserState, m *users.Map) error {
-	if len(c.Parameters) < 3 {
-		return &ErrNeedMoreParams{c.Command}
-	}
+func sendRplWelcome(state *users.UserState) error {
+	wlcm := fmt.Sprintf(":%s 001 %s :Welcome to the Internet Relay Network %s!%s@%s\r\n",
+		state.Conn.LocalAddr().String(), state.User.Nickname, state.User.Nickname, state.User.Username, state.Conn.RemoteAddr().String())
 
-	if c.Trailing == "" {
-		return &ErrNeedMoreParams{c.Command}
-	}
-
-	return nil
+	w := bufio.NewWriter(state.Conn)
+	w.WriteString(wlcm)
+	err := w.Flush()
+	return err
 }

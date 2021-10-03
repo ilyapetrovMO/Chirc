@@ -1,37 +1,51 @@
 package commands
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"net"
+
+	"github.com/ilyapetrovMO/Chirc/internal/users"
 )
 
 var (
-	ErrInParams          = errors.New("error in parameter list")
-	ErrNoNicknameGiven   = errors.New("431 :No nickname given")
-	ErrUnexpectedError   = errors.New("ERROR")
-	ErrAlreadyRegistered = errors.New("462 :Unauthorized command (already registered)")
+	ErrMalformedCommandString = errors.New("unexpected error")
+	ErrCommandStringEmpty     = errors.New("could not parse command, got empty string")
 )
 
-type ErrNeedMoreParams struct {
-	Command string
+func replyErrNicknameInUse(nick string, conn net.Conn) {
+	msg := nick + " :Nickname is already in use"
+	replyWithError(433, "", msg, conn)
 }
 
-func (e *ErrNeedMoreParams) Error() string {
-	return fmt.Sprintf("461 %s :Not enough parameters", e.Command)
+func replyErrNoNicknameGiven(state *users.UserState) {
+	msg := ":No nickname given"
+	replyWithError(431, "", msg, state.Conn)
 }
 
-type ErrUnknownCommand struct {
-	Command string
+func replyErrAlreadyRegistered(state *users.UserState) {
+	msg := ":Unauthorized command (already registered)"
+	replyWithError(462, state.User.Nickname, msg, state.Conn)
 }
 
-func (e *ErrUnknownCommand) Error() string {
-	return fmt.Sprintf("421 %s :unknown command", e.Command)
+func (c *Command) replyErrNeedMoreParams(state *users.UserState) {
+	msg := fmt.Sprintf("%s :Not enough parameters", c.Command)
+	replyWithError(461, state.User.Nickname, msg, state.Conn)
 }
 
-type ErrNicknameInUse struct {
-	Nickname string
+func (c *Command) replyErrUnknownCommand(state *users.UserState) {
+	msg := fmt.Sprintf("%s :Unknown command", c.Command)
+	replyWithError(421, state.User.Nickname, msg, state.Conn)
 }
 
-func (e *ErrNicknameInUse) Error() string {
-	return fmt.Sprintf("433 %s :Nickname already in use", e.Nickname)
+func replyWithError(command int, nick, msg string, conn net.Conn) {
+	if nick == "" {
+		nick = "*"
+	}
+
+	w := bufio.NewWriter(conn)
+	str := fmt.Sprintf(":%s %d %s %s\r\n", conn.LocalAddr().String(), command, nick, msg)
+	w.WriteString(str)
+	w.Flush()
 }

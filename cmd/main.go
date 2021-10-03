@@ -8,10 +8,11 @@ import (
 )
 
 func main() {
+	l := log.Default()
 	app := &application{
-		Users: &users.Map{},
+		Logger: l,
+		Users:  users.NewMap(l),
 	}
-	app.Logger = log.Default()
 
 	opts := &options.Options{}
 	opts.GetOptions(app.Logger)

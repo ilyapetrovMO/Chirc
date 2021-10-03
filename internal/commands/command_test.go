@@ -42,7 +42,7 @@ func TestCommandStruct(t *testing.T) {
 				"PONG command with error",
 				"PONG a:a",
 				nil,
-				ErrUnexpectedError,
+				ErrMalformedCommandString,
 			},
 		}
 
@@ -100,13 +100,13 @@ func TestFields(t *testing.T) {
 				"empty postfix",
 				"PING example.com :",
 				nil,
-				ErrUnexpectedError,
+				ErrMalformedCommandString,
 			},
 			{
 				"unexpected colon",
 				"PING e:xample.com",
 				nil,
-				ErrUnexpectedError,
+				ErrMalformedCommandString,
 			},
 			{
 				"well formed command",

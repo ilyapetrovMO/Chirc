@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"errors"
 	"strings"
 	"unicode"
 
@@ -9,15 +8,16 @@ import (
 )
 
 type Command struct {
-	Prefix     string
-	Command    string
-	Parameters []string
-	Trailing   string
+	Prefix         string
+	Command        string
+	Parameters     []string
+	Trailing       string
+	unknownCommand bool
 }
 
 func NewCommand(cmd string) (*Command, error) {
 	if cmd == "" {
-		return nil, errors.New("command string is empty")
+		return nil, ErrCommandStringEmpty
 	}
 
 	c := &Command{
@@ -39,7 +39,7 @@ func NewCommand(cmd string) (*Command, error) {
 		c.Command = fields[idx]
 		idx++
 	} else {
-		return nil, &ErrUnknownCommand{fields[idx]}
+		c.unknownCommand = true
 	}
 
 	for ; idx < len(fields); idx++ {
@@ -55,6 +55,10 @@ func NewCommand(cmd string) (*Command, error) {
 }
 
 func (c *Command) Handle(state *users.UserState, users *users.Map) error {
+	if c.unknownCommand {
+		c.replyErrUnknownCommand(state)
+		return nil
+	}
 	var err error
 	switch c.Command {
 	// PASS is non-functional
@@ -84,11 +88,11 @@ func fields(cmd string) ([]string, error) {
 			continue
 		}
 		if r == ':' && midWord {
-			return nil, ErrUnexpectedError
+			return nil, ErrMalformedCommandString
 		}
 		if r == ':' && idx != 0 {
 			if i+1 >= len(cmd) {
-				return nil, ErrUnexpectedError
+				return nil, ErrMalformedCommandString
 			}
 			res[idx] = cmd[i:]
 			break
